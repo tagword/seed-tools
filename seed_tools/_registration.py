@@ -49,8 +49,8 @@ from seed_tools.cron_apply_tools import (
     seed_cron_apply_handler,
 )
 from seed_tools.hub_tools import hub_send, hub_send_def
-from seed_tools.git_a import git_tool_handler
-from seed_tools.browser_a import (
+from seed_tools.git import git_tool_handler
+from seed_tools.browser import (
     browser_status,
     browser_status_def,
     browser_connect,
