@@ -119,18 +119,18 @@ def workspace_verify_handler(command: str = "") -> str:
         root = str(_pr().resolve())
     except Exception:
         root = os.getcwd()
-    cmd = (command or "").strip() or os.environ.get("CODEAGENT_WORKSPACE_VERIFY_CMD", "").strip()
+    cmd = (command or "").strip() or os.environ.get("SEED_WORKSPACE_VERIFY_CMD", "").strip()
     if not cmd:
         pkg = os.path.join(root, "package.json")
         if os.path.isfile(pkg):
             cmd = "npm test"
         else:
             return (
-                "No verify command: pass command=..., set CODEAGENT_WORKSPACE_VERIFY_CMD, "
+                "No verify command: pass command=..., set SEED_WORKSPACE_VERIFY_CMD, "
                 "or add package.json for default `npm test`."
             )
     try:
-        timeout = int(os.environ.get("CODEAGENT_WORKSPACE_VERIFY_TIMEOUT", "300") or 300)
+        timeout = int(os.environ.get("SEED_WORKSPACE_VERIFY_TIMEOUT", "300") or 300)
     except Exception:
         timeout = 300
     timeout = max(15, min(timeout, 3600))
@@ -162,8 +162,8 @@ def workspace_verify_handler(command: str = "") -> str:
 workspace_verify_def = Tool(
     name="workspace_verify",
     description=(
-        "Run a non-interactive project check (e.g. tests or lint) in CODEAGENT_PROJECT_ROOT. "
-        "Uses ``command`` if provided, else ``CODEAGENT_WORKSPACE_VERIFY_CMD``, else ``npm test`` when package.json exists."
+        "Run a non-interactive project check (e.g. tests or lint) in SEED_PROJECT_ROOT. "
+        "Uses ``command`` if provided, else ``SEED_WORKSPACE_VERIFY_CMD``, else ``npm test`` when package.json exists."
     ),
     parameters={
         "command": {

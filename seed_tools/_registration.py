@@ -77,6 +77,28 @@ from seed_tools.project_tools import project_handler, project_tool_def
 from seed_tools.db_tools import db_handler, db_tool_def
 from seed_tools.deps_check_tools import deps_check_handler, deps_check_tool_def
 from seed_tools.test_gen_tools import test_gen_handler, test_gen_tool_def
+from seed_tools.test_run_tools import test_run_handler, test_run_def
+from seed_tools.symbol_tools import (
+    symbol_index_refresh_def,
+    symbol_index_refresh_handler,
+    symbol_search_def,
+    symbol_search_handler,
+)
+from seed_tools.lsp_tools import (
+    lsp_definition_def,
+    lsp_definition_handler,
+    lsp_diagnostics_def,
+    lsp_diagnostics_handler,
+)
+from seed_tools.patch_tools import apply_patch_def, apply_patch_handler
+from seed_tools.mcp_tools import (
+    mcp_call_def,
+    mcp_call_handler,
+    mcp_list_tools_def,
+    mcp_list_tools_handler,
+    mcp_servers_def,
+    mcp_servers_handler,
+)
 from seed_tools.pipeline_tools import pipeline_handler, pipeline_tool_def
 from seed_tools.deploy_tools import deploy_handler, deploy_tool_def
 
@@ -180,6 +202,19 @@ def setup_builtin_tools():
     registry.register(refactor_tool_def, refactor_handler)
     registry.register(scaffold_tool_def, scaffold_handler)
     registry.register(test_gen_tool_def, test_gen_handler)
+    registry.register(test_run_def, test_run_handler)
+
+    # MCP bridge
+    registry.register(mcp_servers_def, mcp_servers_handler)
+    registry.register(mcp_list_tools_def, mcp_list_tools_handler)
+    registry.register(mcp_call_def, mcp_call_handler)
+
+    # Code intelligence (Phase 4)
+    registry.register(symbol_search_def, symbol_search_handler)
+    registry.register(symbol_index_refresh_def, symbol_index_refresh_handler)
+    registry.register(lsp_definition_def, lsp_definition_handler)
+    registry.register(lsp_diagnostics_def, lsp_diagnostics_handler)
+    registry.register(apply_patch_def, apply_patch_handler)
     registry.register(deploy_tool_def, deploy_handler)
     registry.register(deps_check_tool_def, deps_check_handler)
     registry.register(api_docs_tool_def, api_docs_handler)

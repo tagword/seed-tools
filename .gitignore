@@ -19,3 +19,7 @@ build/
 .venv/
 venv/
 env/
+
+# Test / lint cache
+.pytest_cache/
+.ruff_cache/

@@ -17,7 +17,7 @@ async def hub_send(to: str, message: str, hub_url: str = "", frm: str = "") -> s
       - to: agent id like agent1..agent5, or "all" to broadcast.
       - message: plain text to forward.
       - hub_url: optional override, e.g. http://127.0.0.1:8899
-      - frm: optional override sender id; default from CODEAGENT_AGENT_ID.
+      - frm: optional override sender id; default from SEED_AGENT_ID.
     """
     import httpx
 
@@ -25,8 +25,8 @@ async def hub_send(to: str, message: str, hub_url: str = "", frm: str = "") -> s
     msg_s = (message or "").strip()
     if not to_s or not msg_s:
         return json.dumps({"ok": False, "detail": "to/message required"}, ensure_ascii=False)
-    hub = (hub_url or "").strip() or os.environ.get("CODEAGENT_HUB_URL", "").strip() or "http://127.0.0.1:8899"
-    sender = (frm or "").strip() or os.environ.get("CODEAGENT_AGENT_ID", "").strip() or "agent?"
+    hub = (hub_url or "").strip() or os.environ.get("SEED_HUB_URL", "").strip() or "http://127.0.0.1:8899"
+    sender = (frm or "").strip() or os.environ.get("SEED_AGENT_ID", "").strip() or "agent?"
     payload = {"from": sender, "to": to_s, "message": msg_s}
     async with httpx.AsyncClient(timeout=60.0) as client:
         r = await client.post(hub.rstrip("/") + "/api/send", json=payload)
@@ -46,8 +46,8 @@ hub_send_def = Tool(
     parameters={
         "to": {"type": "string", "required": True, "description": "Target agent id (agent0..agent5) or 'all'"},
         "message": {"type": "string", "required": True, "description": "Message to send"},
-        "hub_url": {"type": "string", "required": False, "description": "Hub base URL, default from CODEAGENT_HUB_URL or http://127.0.0.1:8899", "default": ""},
-        "frm": {"type": "string", "required": False, "description": "Override sender id (default CODEAGENT_AGENT_ID)", "default": ""},
+        "hub_url": {"type": "string", "required": False, "description": "Hub base URL, default from SEED_HUB_URL or http://127.0.0.1:8899", "default": ""},
+        "frm": {"type": "string", "required": False, "description": "Override sender id (default SEED_AGENT_ID)", "default": ""},
     },
     returns="string: JSON response from hub",
     category="multiagent",

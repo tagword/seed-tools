@@ -54,7 +54,7 @@ def file_read_handler(filepath: str, limit: int = 1000, start: int = 1) -> str:
             return f"Error: File not found: {filepath}"
         start_line = max(1, int(start))
         try:
-            max_bytes = int(os.environ.get("CODEAGENT_FILE_READ_MAX_BYTES", "2097152") or 2097152)
+            max_bytes = int(os.environ.get("SEED_FILE_READ_MAX_BYTES", "2097152") or 2097152)
         except Exception:
             max_bytes = 2097152
         max_bytes = max(64 * 1024, min(max_bytes, 200 * 1024 * 1024))
@@ -64,25 +64,25 @@ def file_read_handler(filepath: str, limit: int = 1000, start: int = 1) -> str:
         # Adaptive mode:
         # - Small files: return content (optionally artifact summary).
         # - Large files: stream chunks, persist full text as artifact, return rolling summary.
-        summarize_on = _env_truthy("CODEAGENT_FILE_READ_CHUNK_SUMMARY", "1")
+        summarize_on = _env_truthy("SEED_FILE_READ_CHUNK_SUMMARY", "1")
         try:
-            threshold_chars = int(os.environ.get("CODEAGENT_FILE_READ_CHUNK_SUMMARY_THRESHOLD_CHARS", "30000") or 30000)
+            threshold_chars = int(os.environ.get("SEED_FILE_READ_CHUNK_SUMMARY_THRESHOLD_CHARS", "30000") or 30000)
         except Exception:
             threshold_chars = 30000
         try:
-            chunk_chars = int(os.environ.get("CODEAGENT_FILE_READ_CHUNK_CHARS", "30000") or 30000)
+            chunk_chars = int(os.environ.get("SEED_FILE_READ_CHUNK_CHARS", "30000") or 30000)
         except Exception:
             chunk_chars = 30000
         try:
-            max_chunks = int(os.environ.get("CODEAGENT_FILE_READ_MAX_CHUNKS", "12") or 12)
+            max_chunks = int(os.environ.get("SEED_FILE_READ_MAX_CHUNKS", "12") or 12)
         except Exception:
             max_chunks = 12
         try:
-            summary_max_tokens = int(os.environ.get("CODEAGENT_FILE_READ_SUMMARY_MAX_TOKENS", "1200") or 1200)
+            summary_max_tokens = int(os.environ.get("SEED_FILE_READ_SUMMARY_MAX_TOKENS", "1200") or 1200)
         except Exception:
             summary_max_tokens = 1200
         try:
-            roll_max_chars = int(os.environ.get("CODEAGENT_FILE_READ_ROLLING_SUMMARY_CHARS", "2000") or 2000)
+            roll_max_chars = int(os.environ.get("SEED_FILE_READ_ROLLING_SUMMARY_CHARS", "2000") or 2000)
         except Exception:
             roll_max_chars = 2000
 
@@ -96,7 +96,7 @@ def file_read_handler(filepath: str, limit: int = 1000, start: int = 1) -> str:
         raw_path: Optional[str] = None
         raw_fp = None
         try:
-            if _env_truthy("CODEAGENT_TOOL_ARTIFACTS", "1"):
+            if _env_truthy("SEED_TOOL_ARTIFACTS", "1"):
                 from seed.core.llm_sess import llm_sessions_dir
 
                 agent_id, session_id = _active_agent_and_session()

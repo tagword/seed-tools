@@ -25,25 +25,25 @@ def web_fetch_handler(url: str, timeout: int = 10) -> str:
             # Always try to persist the full body as an artifact (large pages often blow up context).
             ap = _artifact_write_text(kind="web_fetch", name_hint="page", text=content)
 
-            summarize_on = _env_truthy("CODEAGENT_WEB_FETCH_CHUNK_SUMMARY", "1")
+            summarize_on = _env_truthy("SEED_WEB_FETCH_CHUNK_SUMMARY", "1")
             try:
-                threshold_chars = int(os.environ.get("CODEAGENT_WEB_FETCH_CHUNK_SUMMARY_THRESHOLD_CHARS", "30000") or 30000)
+                threshold_chars = int(os.environ.get("SEED_WEB_FETCH_CHUNK_SUMMARY_THRESHOLD_CHARS", "30000") or 30000)
             except Exception:
                 threshold_chars = 30000
             try:
-                chunk_chars = int(os.environ.get("CODEAGENT_WEB_FETCH_CHUNK_CHARS", "30000") or 30000)
+                chunk_chars = int(os.environ.get("SEED_WEB_FETCH_CHUNK_CHARS", "30000") or 30000)
             except Exception:
                 chunk_chars = 30000
             try:
-                max_chunks = int(os.environ.get("CODEAGENT_WEB_FETCH_MAX_CHUNKS", "10") or 10)
+                max_chunks = int(os.environ.get("SEED_WEB_FETCH_MAX_CHUNKS", "10") or 10)
             except Exception:
                 max_chunks = 10
             try:
-                summary_max_tokens = int(os.environ.get("CODEAGENT_WEB_FETCH_SUMMARY_MAX_TOKENS", "1200") or 1200)
+                summary_max_tokens = int(os.environ.get("SEED_WEB_FETCH_SUMMARY_MAX_TOKENS", "1200") or 1200)
             except Exception:
                 summary_max_tokens = 1200
             try:
-                roll_max_chars = int(os.environ.get("CODEAGENT_WEB_FETCH_ROLLING_SUMMARY_CHARS", "2000") or 2000)
+                roll_max_chars = int(os.environ.get("SEED_WEB_FETCH_ROLLING_SUMMARY_CHARS", "2000") or 2000)
             except Exception:
                 roll_max_chars = 2000
 

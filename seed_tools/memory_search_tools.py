@@ -74,7 +74,7 @@ def memory_search_handler(
                         text = p.read_text(encoding="utf-8", errors="replace")
                     except OSError:
                         continue
-                    if os.environ.get("CODEAGENT_MEMORY_SEARCH_INCLUDE_EXPIRED", "").lower() not in (
+                    if os.environ.get("SEED_MEMORY_SEARCH_INCLUDE_EXPIRED", "").lower() not in (
                         "1",
                         "true",
                         "yes",

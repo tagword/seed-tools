@@ -62,20 +62,20 @@ async def browser_ensure_running(
     from seed.integrations.browser import BROWSER, ensure_browser_running
 
     if not use_system_profile:
-        use_system_profile = os.environ.get("CODEAGENT_BROWSER_USE_SYSTEM_PROFILE", "").strip().lower() in (
+        use_system_profile = os.environ.get("SEED_BROWSER_USE_SYSTEM_PROFILE", "").strip().lower() in (
             "1",
             "true",
             "yes",
             "on",
         )
     if not profile_directory:
-        profile_directory = os.environ.get("CODEAGENT_BROWSER_PROFILE_DIRECTORY", "").strip()
+        profile_directory = os.environ.get("SEED_BROWSER_PROFILE_DIRECTORY", "").strip()
     if not user_data_dir:
-        user_data_dir = os.environ.get("CODEAGENT_BROWSER_USER_DATA_DIR", "").strip()
+        user_data_dir = os.environ.get("SEED_BROWSER_USER_DATA_DIR", "").strip()
     if not browser_path:
-        browser_path = os.environ.get("CODEAGENT_BROWSER_PATH", "").strip()
+        browser_path = os.environ.get("SEED_BROWSER_PATH", "").strip()
     if not browser or browser == "chrome":
-        browser = os.environ.get("CODEAGENT_BROWSER_KIND", browser).strip() or "chrome"
+        browser = os.environ.get("SEED_BROWSER_KIND", browser).strip() or "chrome"
 
     res = await ensure_browser_running(
         baseurl=baseurl,
@@ -182,7 +182,7 @@ browser_navigate_def = Tool(
     name="browser_navigate",
     description=(
         "Navigate a page target to the given URL. "
-        "Default blocks private/local IPs unless CODEAGENT_BROWSER_ALLOW_PRIVATE_URLS=1."
+        "Default blocks private/local IPs unless SEED_BROWSER_ALLOW_PRIVATE_URLS=1."
     ),
     parameters={
         "target_ws_url": {

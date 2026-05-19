@@ -16,13 +16,13 @@ def _artifact_write_text(*, kind: str, name_hint: str, text: str) -> Optional[st
     """
     Persist large tool outputs to disk and return the absolute artifact path.
     Controlled by:
-      - CODEAGENT_TOOL_ARTIFACTS=1
-      - CODEAGENT_TOOL_ARTIFACTS_MIN_CHARS (default 20000)
+      - SEED_TOOL_ARTIFACTS=1
+      - SEED_TOOL_ARTIFACTS_MIN_CHARS (default 20000)
     """
-    if not _env_truthy("CODEAGENT_TOOL_ARTIFACTS", "1"):
+    if not _env_truthy("SEED_TOOL_ARTIFACTS", "1"):
         return None
     try:
-        min_chars = int(os.environ.get("CODEAGENT_TOOL_ARTIFACTS_MIN_CHARS", "20000") or 20000)
+        min_chars = int(os.environ.get("SEED_TOOL_ARTIFACTS_MIN_CHARS", "20000") or 20000)
     except Exception:
         min_chars = 20000
     if min_chars > 0 and len(text or "") < min_chars:
@@ -49,7 +49,7 @@ def _artifact_summary(*, title: str, text: str, path: Optional[str]) -> str:
     Return a compact response that keeps context small while leaving a breadcrumb to full text.
     """
     try:
-        keep = int(os.environ.get("CODEAGENT_TOOL_ARTIFACTS_SUMMARY_CHARS", "4000") or 4000)
+        keep = int(os.environ.get("SEED_TOOL_ARTIFACTS_SUMMARY_CHARS", "4000") or 4000)
     except Exception:
         keep = 4000
     keep = max(200, min(keep, 20000))
@@ -69,19 +69,19 @@ def _summarize_text_with_fallback(*, text: str, max_tokens: int) -> str:
     Summarize text using an optional cheaper model, otherwise fall back to the main chat model.
 
     Env (optional):
-      - CODEAGENT_TOOL_SUMMARY_BASEURL
-      - CODEAGENT_TOOL_SUMMARY_MODEL
-      - CODEAGENT_LLM_BASEURL / CODEAGENT_LLM_MODEL (fallback)
+      - SEED_TOOL_SUMMARY_BASEURL
+      - SEED_TOOL_SUMMARY_MODEL
+      - SEED_LLM_BASEURL / SEED_LLM_MODEL (fallback)
     """
     from seed.core.llm_exec import get_llm_executor
 
     baseurl = (
-        os.environ.get("CODEAGENT_TOOL_SUMMARY_BASEURL", "").strip().rstrip("/")
-        or os.environ.get("CODEAGENT_LLM_BASEURL", "").strip().rstrip("/")
+        os.environ.get("SEED_TOOL_SUMMARY_BASEURL", "").strip().rstrip("/")
+        or os.environ.get("SEED_LLM_BASEURL", "").strip().rstrip("/")
     )
     model = (
-        os.environ.get("CODEAGENT_TOOL_SUMMARY_MODEL", "").strip()
-        or os.environ.get("CODEAGENT_LLM_MODEL", "").strip()
+        os.environ.get("SEED_TOOL_SUMMARY_MODEL", "").strip()
+        or os.environ.get("SEED_LLM_MODEL", "").strip()
         or "Qwen/Qwen3.5-35B-A3B-GPTQ-Int4"
     )
     if not baseurl:
@@ -92,7 +92,7 @@ def _summarize_text_with_fallback(*, text: str, max_tokens: int) -> str:
         half = cap // 2
         return (
             t[:half]
-            + "\n...[未配置 CODEAGENT_TOOL_SUMMARY_BASEURL / CODEAGENT_LLM_BASEURL，无法调用摘要模型；已截断]...\n"
+            + "\n...[未配置 SEED_TOOL_SUMMARY_BASEURL / SEED_LLM_BASEURL，无法调用摘要模型；已截断]...\n"
             + t[-half:]
         )
     llm = get_llm_executor(baseURL=baseurl, model=model)
