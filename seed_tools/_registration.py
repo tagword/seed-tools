@@ -100,6 +100,7 @@ from seed_tools.mcp_tools import (
     mcp_servers_handler,
 )
 from seed_tools.pipeline_tools import pipeline_handler, pipeline_tool_def
+from seed_tools.instruction_tools import instruction_read_def, instruction_read_handler
 from seed_tools.deploy_tools import deploy_handler, deploy_tool_def
 
 # ── Create missing tool definitions ──
@@ -221,6 +222,9 @@ def setup_builtin_tools():
     registry.register(diagram_tool_def, diagram_handler)
     registry.register(pipeline_tool_def, pipeline_handler)
     registry.register(db_tool_def, db_handler)
+
+    # Instruction releases (taskagent)
+    registry.register(instruction_read_def, instruction_read_handler)
     
     executor = ToolExecutor(registry)
     return registry, executor
