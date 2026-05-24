@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import os
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Optional
 
@@ -26,6 +28,31 @@ def _detect_framework(cwd: Path) -> str:
     return ""
 
 
+def _bundled_tools_active() -> bool:
+    return bool(os.environ.get("CODEAGENT_BUNDLED_TOOLS", "").strip())
+
+
+def _run_pytest_inprocess(work: Path, extra_args: str) -> tuple[int, str]:
+    """Run pytest inside the frozen CodeAgent process (bundled .app)."""
+    import pytest
+
+    argv = ["pytest"]
+    if extra_args.strip():
+        argv.extend(extra_args.split())
+    else:
+        argv.append("-q")
+
+    buf = io.StringIO()
+    old_cwd = Path.cwd()
+    try:
+        os.chdir(work)
+        with redirect_stdout(buf), redirect_stderr(buf):
+            code = int(pytest.main(argv))
+    finally:
+        os.chdir(old_cwd)
+    return code, buf.getvalue()
+
+
 def test_run_handler(
     framework: str = "auto",
     extra_args: str = "",
@@ -47,6 +74,14 @@ def test_run_handler(
 
     if fw == "pytest":
         args = (extra_args or "").strip()
+        if _bundled_tools_active():
+            safe_timeout = enforce_bash_timeout(timeout)
+            _ = safe_timeout  # in-process pytest ignores shell timeout
+            code, output = _run_pytest_inprocess(work, args)
+            header = f"[test_run:{fw}] [exec: bundled in-process] cwd={work}\n"
+            if code == 0:
+                return header + (output or "(tests passed, no output)")
+            return f"{header}Tests failed (exit {code}):\n{output}"
         command = f"python -m pytest {args}".strip() if args else "python -m pytest -q"
     else:
         command = "npm test"
