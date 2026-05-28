@@ -50,6 +50,19 @@ from seed_tools.cron_apply_tools import (
 )
 from seed_tools.hub_tools import hub_send, hub_send_def
 from seed_tools.git import git_tool_handler
+from seed_tools.vision_tools import (
+    vision_analyze,
+    vision_analyze_def,
+    vision_analyze_directory,
+    vision_analyze_directory_def,
+)
+from seed_tools.image_gen_tools import image_generate, image_generate_def
+from seed_tools.media_tools import (
+    audio_transcribe,
+    audio_transcribe_def,
+    video_analyze,
+    video_analyze_def,
+)
 from seed_tools.browser import (
     browser_status,
     browser_status_def,
@@ -197,6 +210,12 @@ def setup_builtin_tools():
     registry.register(browser_new_page_def, browser_new_page)
     registry.register(browser_navigate_def, browser_navigate)
     registry.register(browser_screenshot_def, browser_screenshot)
+
+    registry.register(vision_analyze_def, vision_analyze)
+    registry.register(vision_analyze_directory_def, vision_analyze_directory)
+    registry.register(image_generate_def, image_generate)
+    registry.register(audio_transcribe_def, audio_transcribe)
+    registry.register(video_analyze_def, video_analyze)
 
     # ── Migrated tool_modules (dev tools) ──
     registry.register(project_tool_def, project_handler)

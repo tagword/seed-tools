@@ -197,23 +197,43 @@ browser_navigate_def = Tool(
 )
 
 async def browser_screenshot(target_ws_url: str, full_page: bool = False) -> str:
-    """Capture a screenshot as base64 PNG."""
+    """Capture a PNG screenshot; save as session attachment for vision_analyze."""
+    import base64
+
     from seed.integrations.browser import BROWSER
 
     res = await BROWSER.screenshot(target_ws_url=target_ws_url, full_page=bool(full_page))
-    # Do not return the full base64 to the model by default (it is huge).
-    # Return metadata + a short prefix so the user can choose to fetch full data via UI endpoint.
     b64 = str(res.get("png_base64") or "")
     meta = {k: v for k, v in res.items() if k != "png_base64"}
-    meta["png_base64_prefix"] = b64[:120] + ("..." if len(b64) > 120 else "")
     meta["png_base64_len"] = len(b64)
+    attachment_id = ""
+    try:
+        if b64:
+            from seed_tools.shell_helpers import _active_agent_and_session
+            from seed.core.media_store import save_session_media
+
+            agent_id, session_id = _active_agent_and_session()
+            raw = base64.standard_b64decode(b64)
+            attachment_id, path = save_session_media(
+                agent_id=agent_id,
+                session_id=session_id,
+                raw_bytes=raw,
+                filename="browser_screenshot.png",
+                mime="image/png",
+            )
+            meta["attachment_id"] = attachment_id
+            meta["path"] = str(path)
+            meta["hint"] = "Call vision_analyze(attachment_id=...) to understand this screenshot."
+    except Exception as e:
+        meta["attachment_error"] = str(e)
     return json.dumps(meta, ensure_ascii=False)
+
 
 browser_screenshot_def = Tool(
     name="browser_screenshot",
     description=(
-        "Capture a PNG screenshot of a page target. Returns metadata and a short base64 prefix only "
-        "(full image omitted by default due to size)."
+        "Capture a PNG screenshot of a page target. Saves attachment_id for vision_analyze; "
+        "does not embed image in chat context."
     ),
     parameters={
         "target_ws_url": {
