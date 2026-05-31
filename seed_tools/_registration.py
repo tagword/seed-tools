@@ -57,7 +57,10 @@ from seed_tools.vision_tools import (
     vision_analyze_directory_def,
 )
 from seed_tools.image_gen_tools import image_generate, image_generate_def
+from seed_tools.music_gen_tools import music_generate, music_generate_def
 from seed_tools.media_tools import (
+    attachment_resolve_path,
+    attachment_resolve_path_def,
     audio_transcribe,
     audio_transcribe_def,
     video_analyze,
@@ -214,6 +217,8 @@ def setup_builtin_tools():
     registry.register(vision_analyze_def, vision_analyze)
     registry.register(vision_analyze_directory_def, vision_analyze_directory)
     registry.register(image_generate_def, image_generate)
+    registry.register(music_generate_def, music_generate)
+    registry.register(attachment_resolve_path_def, attachment_resolve_path)
     registry.register(audio_transcribe_def, audio_transcribe)
     registry.register(video_analyze_def, video_analyze)
 

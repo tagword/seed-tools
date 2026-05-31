@@ -13,7 +13,7 @@ def memory_search_handler(
     scope: str = "all",
     max_results: int = 12,
 ) -> str:
-    """Search episodic logs and stored LLM transcripts by substring."""
+    """Search episodic logs and stored chat sessions by substring."""
 
     from seed.core.agent_context import (
         active_episodic_project_id,
@@ -21,9 +21,9 @@ def memory_search_handler(
         get_active_llm_session,
     )
     from seed.core.llm_sess import (
-        list_stored_llm_session_ids,
-        load_llm_messages,
-        llm_sessions_dir,
+        list_stored_session_ids,
+        load_session_messages,
+        agent_sessions_dir,
         read_stored_session_project_id,
     )
     from seed.core.mem_bridge import parsed_experience_project_id
@@ -100,13 +100,13 @@ def memory_search_handler(
             if scope_l == "session":
                 ids = [active] if (active and _sid_in_scope(active)) else []
             else:
-                ids = list_stored_llm_session_ids(agent_id=aid)
+                ids = list_stored_session_ids(agent_id=aid)
             for sid in ids:
                 if len(lines) >= cap:
                     break
                 if not _sid_in_scope(sid):
                     continue
-                msgs = load_llm_messages(sid, agent_id=aid)
+                msgs = load_session_messages(sid, agent_id=aid)
                 if not msgs:
                     continue
                 blob = json.dumps(msgs, ensure_ascii=False).lower()
@@ -117,7 +117,7 @@ def memory_search_handler(
             take(f"[llm_session] error: {e}")
 
     if not lines:
-        return f"No matches for {query!r} (scope={scope}). Sessions dir: {llm_sessions_dir(aid)}"
+        return f"No matches for {query!r} (scope={scope}). Sessions dir: {agent_sessions_dir(aid)}"
     return "\n".join(lines[:cap])
 
 memory_search_def = Tool(
@@ -131,7 +131,7 @@ memory_search_def = Tool(
         "scope": {
             "type": "string",
             "required": False,
-            "description": "all | experiences | sessions | session (current session transcripts only)",
+            "description": "all | experiences | sessions | session (current session messages only)",
             "default": "all",
         },
         "max_results": {

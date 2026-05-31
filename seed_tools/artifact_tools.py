@@ -17,7 +17,7 @@ def artifact_read_handler(
     max_chars: int = 12000,
 ) -> str:
     """
-    Read an artifact file (typically under llm_sessions/_artifacts/...) with either:
+    Read an artifact file (typically under sessions/_artifacts/...) with either:
     - line range [start_line, end_line] (1-indexed; end_line<=0 means until EOF)
     - OR grep-like pattern matches with +/- context lines.
     """
@@ -28,12 +28,12 @@ def artifact_read_handler(
         if not os.path.exists(p):
             return f"Error: File not found: {p}"
 
-        # Best-effort safety: when the path is absolute, require it under the current agent's llm_sessions_dir.
+        # Best-effort safety: when the path is absolute, require it under the current agent's sessions dir.
         try:
-            from seed.core.llm_sess import llm_sessions_dir
+            from seed.core.llm_sess import agent_sessions_dir
 
             agent_id, _sid = _active_agent_and_session()
-            base = os.path.abspath(str(llm_sessions_dir(agent_id)))
+            base = os.path.abspath(str(agent_sessions_dir(agent_id)))
             ap = os.path.abspath(p)
             if not ap.startswith(base):
                 return f"Error: Refuse to read outside sessions dir: {ap}"
@@ -98,9 +98,9 @@ def artifact_read_handler(
 
 artifact_read_def = Tool(
     name="artifact_read",
-    description="Read a saved artifact file from llm_sessions/_artifacts with line range or pattern match.",
+    description="Read a saved artifact file from sessions/_artifacts with line range or pattern match.",
     parameters={
-        "path": {"type": "string", "required": True, "description": "Absolute artifact file path (typically under llm_sessions/_artifacts/...)"},
+        "path": {"type": "string", "required": True, "description": "Absolute artifact file path (typically under agents/<id>/sessions/_artifacts/...)"},
         "start_line": {"type": "integer", "required": False, "description": "1-indexed start line (default: 1)"},
         "end_line": {"type": "integer", "required": False, "description": "1-indexed end line; <=0 means until EOF"},
         "pattern": {"type": "string", "required": False, "description": "If set, run substring match and return hits with context"},

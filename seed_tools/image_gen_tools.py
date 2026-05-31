@@ -1,15 +1,15 @@
-"""Image generation tool (OpenAI-compatible /images/generations)."""
+"""Image generation tool (provider-dispatched protocols)."""
 
 from __future__ import annotations
 
 import base64
 import json
 import logging
+import mimetypes
 import os
 import uuid
+from pathlib import Path
 from typing import Any, List, Optional
-
-import requests
 
 from seed.core.models import Tool
 from seed_tools.shell_helpers import _active_agent_and_session
@@ -31,7 +31,7 @@ _ALLOWED_SIZES = frozenset(
 
 def _max_images() -> int:
     try:
-        return max(1, min(int(os.environ.get("CODEAGENT_IMAGE_GEN_MAX_COUNT", "4") or 4), 8))
+        return max(1, min(int(os.environ.get("CODEAGENT_IMAGE_GEN_MAX_COUNT", "4") or 4), 15))
     except ValueError:
         return 4
 
@@ -40,84 +40,41 @@ def _default_size() -> str:
     return os.environ.get("CODEAGENT_IMAGE_GEN_DEFAULT_SIZE", "1024x1024").strip() or "1024x1024"
 
 
-def _images_url(base_url: str) -> str:
-    base = (base_url or "").strip().rstrip("/")
-    if base.endswith("/images/generations"):
-        return base
-    return f"{base}/images/generations"
+def _attachment_to_image_ref(path: Path) -> str:
+    raw = path.read_bytes()
+    mime, _ = mimetypes.guess_type(str(path))
+    mime = mime or "image/png"
+    if not mime.startswith("image/"):
+        raise ValueError(f"attachment is not an image: {path.name}")
+    b64 = base64.standard_b64encode(raw).decode("ascii")
+    return f"data:{mime};base64,{b64}"
 
 
-def _auth_headers(preset: dict[str, Any]) -> dict[str, str]:
-    headers = {"Content-Type": "application/json"}
-    key = str(preset.get("api_key") or "").strip()
-    scheme = str(preset.get("auth_scheme") or "Bearer").strip() or "Bearer"
-    if key:
-        headers["Authorization"] = f"{scheme} {key}"
-    return headers
-
-
-def _decode_image_item(item: dict[str, Any]) -> bytes:
-    b64 = item.get("b64_json")
-    if b64:
-        return base64.standard_b64decode(str(b64))
-    url = str(item.get("url") or "").strip()
-    if url:
-        resp = requests.get(url, timeout=120)
-        resp.raise_for_status()
-        return resp.content
-    raise ValueError("image item missing b64_json and url")
-
-
-def call_image_generations(
-    preset: dict[str, Any],
+def collect_reference_images(
     *,
-    prompt: str,
-    size: str,
-    n: int,
-    quality: str = "",
-) -> List[bytes]:
-    model = str(preset.get("model") or "").strip()
-    if not model:
-        raise ValueError("image_gen preset missing model")
-    payload: dict[str, Any] = {
-        "model": model,
-        "prompt": prompt,
-        "n": n,
-        "size": size,
-    }
-    q = (quality or "").strip().lower()
-    if q in ("standard", "hd"):
-        payload["quality"] = q
-    payload["response_format"] = "b64_json"
+    reference_image_urls: Optional[List[str]] = None,
+    attachment_ids: Optional[List[str]] = None,
+) -> List[str]:
+    """Resolve reference images to URLs or data URLs for provider APIs."""
+    out: List[str] = []
+    if reference_image_urls:
+        for u in reference_image_urls:
+            u = str(u).strip()
+            if u:
+                out.append(u)
+    ids: List[str] = []
+    if attachment_ids:
+        ids.extend(str(x).strip() for x in attachment_ids if str(x).strip())
+    if not ids:
+        return out
+    from codeagent.core.attachments import resolve_attachment_path
 
-    url = _images_url(str(preset.get("base_url") or ""))
-    headers = _auth_headers(preset)
-    timeout = int(os.environ.get("CODEAGENT_IMAGE_GEN_TIMEOUT_SEC", "180") or 180)
-
-    resp = requests.post(url, json=payload, headers=headers, timeout=max(30, timeout))
-    if resp.status_code >= 400 and payload.get("response_format"):
-        payload.pop("response_format", None)
-        resp = requests.post(url, json=payload, headers=headers, timeout=max(30, timeout))
-    if resp.status_code >= 400:
-        detail = resp.text[:500]
-        try:
-            detail = resp.json().get("error", detail)
-            if isinstance(detail, dict):
-                detail = detail.get("message") or str(detail)
-        except Exception:
-            pass
-        raise ValueError(f"image generation failed ({resp.status_code}): {detail}")
-
-    data = resp.json()
-    items = data.get("data")
-    if not isinstance(items, list) or not items:
-        raise ValueError("image generation returned no data")
-    out: List[bytes] = []
-    for item in items:
-        if isinstance(item, dict):
-            out.append(_decode_image_item(item))
-    if not out:
-        raise ValueError("failed to decode generated images")
+    agent_id, session_id = _active_agent_and_session()
+    for aid in ids:
+        p = resolve_attachment_path(agent_id, session_id, aid)
+        if not p or not p.is_file():
+            raise ValueError(f"reference attachment not found: {aid}")
+        out.append(_attachment_to_image_ref(p))
     return out
 
 
@@ -127,6 +84,8 @@ async def image_generate(
     n: int = 1,
     quality: str = "standard",
     negative_prompt: str = "",
+    reference_image_urls: Optional[List[str]] = None,
+    attachment_ids: Optional[List[str]] = None,
 ) -> str:
     """Generate image(s) via configured image_gen preset; saves as session attachments."""
     text = (prompt or "").strip()
@@ -136,14 +95,13 @@ async def image_generate(
     try:
         from codeagent.core.image_gen_models import resolve_image_gen_preset
         from seed.core.agent_context import get_active_image_gen_preset
+        from seed.core.model_providers import call_image_generations, normalize_image_size
 
         preset = resolve_image_gen_preset(get_active_image_gen_preset() or None)
     except ValueError as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
-    sz = (size or _default_size()).strip()
-    if sz not in _ALLOWED_SIZES:
-        sz = _default_size()
+    sz = normalize_image_size(size or "", _default_size(), preset=preset)
     try:
         count = max(1, min(int(n), _max_images()))
     except (TypeError, ValueError):
@@ -155,12 +113,21 @@ async def image_generate(
         full_prompt = f"{text}\n\nAvoid: {neg}"
 
     try:
+        refs = collect_reference_images(
+            reference_image_urls=reference_image_urls,
+            attachment_ids=attachment_ids,
+        )
+    except ValueError as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+    try:
         raw_images = call_image_generations(
             preset,
             prompt=full_prompt,
             size=sz,
             n=count,
             quality=quality or "standard",
+            reference_images=refs or None,
         )
     except Exception as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
@@ -193,10 +160,14 @@ async def image_generate(
     if not images_out:
         return json.dumps({"error": "failed to save generated images"}, ensure_ascii=False)
 
+    from seed.core.model_providers import resolve_provider_for_preset
+
     payload = {
         "prompt": text,
         "model": preset.get("model"),
+        "provider": resolve_provider_for_preset(preset),
         "size": sz,
+        "reference_count": len(refs),
         "images": images_out,
         "summary": f"Generated {len(images_out)} image(s). "
         + "; ".join(f"[attachment:{i['attachment_id']} {i['filename']}]" for i in images_out),
@@ -207,19 +178,28 @@ async def image_generate(
 image_generate_def = Tool(
     name="image_generate",
     description=(
-        "Generate image(s) from a text prompt using the configured image generation model "
-        "(OpenAI-compatible /images/generations). Returns attachment_id(s) for display/download. "
-        "Use when the user asks to draw, design, or create an image."
+        "Generate image(s) from a text prompt using the configured image generation preset. "
+        "Provider selects protocol (OpenAI / MiniMax / 火山方舟 Seedream). "
+        "For image-to-image, pass reference_image_urls and/or attachment_ids. "
+        "Returns attachment_id(s) for display/download."
     ),
     parameters={
         "prompt": {"type": "string", "required": True, "description": "Image description / prompt"},
         "size": {
             "type": "string",
             "required": False,
-            "description": "e.g. 1024x1024, 1024x1792, 1792x1024",
+            "description": (
+                "OpenAI: 1024x1024, 1024x1792. MiniMax: 1:1, 16:9, 9:16. "
+                "Volcengine: 2K, 3K, 4K or WxH (WxH auto-mapped to 2K where needed)"
+            ),
             "default": "1024x1024",
         },
-        "n": {"type": "integer", "required": False, "description": "Number of images (max 4)", "default": 1},
+        "n": {
+            "type": "integer",
+            "required": False,
+            "description": "Number of images (OpenAI/MiniMax up to 9; Volcengine sequential up to 15)",
+            "default": 1,
+        },
         "quality": {
             "type": "string",
             "required": False,
@@ -231,7 +211,38 @@ image_generate_def = Tool(
             "required": False,
             "description": "Optional things to avoid in the image",
         },
+        "reference_image_urls": {
+            "type": "array",
+            "required": False,
+            "description": "Reference image URL(s) for image-to-image (MiniMax / Volcengine)",
+        },
+        "attachment_ids": {
+            "type": "array",
+            "required": False,
+            "description": "Session attachment id(s) as reference images (converted to data URL)",
+        },
     },
     returns="JSON with images[{attachment_id, url, filename}] and summary",
     category="vision",
 )
+
+
+def call_image_generations(
+    preset: dict[str, Any],
+    *,
+    prompt: str,
+    size: str,
+    n: int,
+    quality: str = "",
+    reference_images: Optional[List[str]] = None,
+) -> List[bytes]:
+    from seed.core.model_providers import call_image_generations as _dispatch
+
+    return _dispatch(
+        preset,
+        prompt=prompt,
+        size=size,
+        n=n,
+        quality=quality,
+        reference_images=reference_images,
+    )

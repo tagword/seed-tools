@@ -384,6 +384,32 @@ audio_transcribe_def = Tool(
     category="vision",
 )
 
+async def attachment_resolve_path(attachment_id: str) -> str:
+    """Return absolute filesystem path for an attachment (e.g. MiniMax MCP image_url)."""
+    try:
+        aid, path = _resolve_attachment_path(attachment_id)
+    except ValueError as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+    return json.dumps(
+        {"attachment_id": aid, "path": str(path.resolve()), "filename": path.name},
+        ensure_ascii=False,
+    )
+
+
+attachment_resolve_path_def = Tool(
+    name="attachment_resolve_path",
+    description=(
+        "Resolve an attachment id to its absolute file path on disk. "
+        "Use before MiniMax MCP understand_image (image_url) or other local-path tools."
+    ),
+    parameters={
+        "attachment_id": {"type": "string", "required": True, "description": "Attachment id from [attachment:...]"},
+    },
+    returns="JSON with path",
+    category="vision",
+)
+
+
 video_analyze_def = Tool(
     name="video_analyze",
     description=(

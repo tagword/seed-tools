@@ -7,7 +7,7 @@ from seed.core.models import Tool
 logger = logging.getLogger(__name__)
 
 
-def bash_tool_handler(command: str, timeout: int = 30, cwd: Optional[str] = None) -> str:
+def bash_tool_handler(command: str, timeout: int = 30, cwd: Optional[str] = None, detach: bool = False) -> str:
     """Execute a shell command with safety checks (local or Docker backend)."""
     from seed.core.agent_context import get_active_project_workspace_cwd
     from seed.integrations.exec_backend import exec_backend_label, run_shell
@@ -20,7 +20,7 @@ def bash_tool_handler(command: str, timeout: int = 30, cwd: Optional[str] = None
         return err
 
     safe_timeout = enforce_bash_timeout(timeout)
-    returncode, output = run_shell(command, timeout=safe_timeout, cwd=cwd)
+    returncode, output = run_shell(command, timeout=safe_timeout, cwd=cwd, detach=detach)
     header = f"[exec: {exec_backend_label()}]\n"
     if returncode == 0:
         return header + output if output else header + "(no output)"
@@ -34,7 +34,8 @@ bash_def = Tool(
     parameters={
         "command": {"type": "string", "required": True, "description": "Shell command to execute"},
         "timeout": {"type": "integer", "required": False, "description": "Timeout in seconds", "default": 30},
-        "cwd": {"type": "string", "required": False, "description": "Working directory"}
+        "cwd": {"type": "string", "required": False, "description": "Working directory"},
+        "detach": {"type": "boolean", "required": False, "description": "Run in background without blocking", "default": False}
     },
     returns="string: Command output or error message"
 )

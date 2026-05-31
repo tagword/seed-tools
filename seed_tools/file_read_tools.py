@@ -97,10 +97,10 @@ def file_read_handler(filepath: str, limit: int = 1000, start: int = 1) -> str:
         raw_fp = None
         try:
             if _env_truthy("SEED_TOOL_ARTIFACTS", "1"):
-                from seed.core.llm_sess import llm_sessions_dir
+                from seed.core.llm_sess import agent_sessions_dir
 
                 agent_id, session_id = _active_agent_and_session()
-                base = os.path.join(str(llm_sessions_dir(agent_id)), "_artifacts", session_id)
+                base = os.path.join(str(agent_sessions_dir(agent_id)), "_artifacts", session_id)
                 os.makedirs(base, exist_ok=True)
                 ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
                 safe = "".join(ch if ch.isalnum() or ch in ("-", "_", ".") else "_" for ch in os.path.basename(filepath))[:64]
