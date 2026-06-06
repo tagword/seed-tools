@@ -38,10 +38,10 @@ def collect_reference_audio(
         return "", ""
     if len(ids) > 1:
         raise ValueError("music cover supports one reference audio attachment at a time")
-    from codeagent.core.attachments import resolve_attachment_path
+    from seed.core.media_store import resolve_session_media_path
 
     agent_id, session_id = _active_agent_and_session()
-    p = resolve_attachment_path(agent_id, session_id, ids[0])
+    p = resolve_session_media_path(agent_id, session_id, ids[0])
     if not p or not p.is_file():
         raise ValueError(f"reference attachment not found: {ids[0]}")
     return "", _attachment_to_audio_base64(p)
@@ -63,11 +63,16 @@ async def music_generate(
         return json.dumps({"error": "prompt or lyrics required"}, ensure_ascii=False)
 
     try:
-        from codeagent.core.music_models import resolve_music_preset
         from seed.core.agent_context import get_active_music_preset
         from seed.core.model_providers import call_music_generations, resolve_provider_for_preset
+        from seed_tools._preset_helpers import resolve_capability_preset
 
-        preset = resolve_music_preset(get_active_music_preset() or None)
+        preset = resolve_capability_preset(
+            "supports_music",
+            "CODEAGENT_MUSIC_GEN_PRESET_ID",
+            get_active_music_preset,
+            "music generation",
+        )
     except ValueError as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
@@ -100,11 +105,11 @@ async def music_generate(
         ext = "pcm"
 
     agent_id, session_id = _active_agent_and_session()
-    from codeagent.core.attachments import save_attachment
+    from seed.core.media_store import save_session_media
 
     fname = f"generated-music-{uuid.uuid4().hex[:8]}.{ext}"
     try:
-        saved = save_attachment(
+        aid, _ = save_session_media(
             agent_id=agent_id,
             session_id=session_id,
             raw_bytes=audio_bytes,
@@ -123,13 +128,13 @@ async def music_generate(
         "is_instrumental": bool(is_instrumental),
         "lyrics_optimizer": bool(lyrics_optimizer),
         "audio": {
-            "attachment_id": saved.id,
-            "filename": saved.filename,
-            "url": f"/api/attachments/{saved.id}?session_id={session_id}&agent_id={agent_id}",
+            "attachment_id": aid,
+            "filename": fname,
+            "url": f"/api/attachments/{aid}?session_id={session_id}&agent_id={agent_id}",
             "kind": "generated_music",
             "mime": mime,
         },
-        "summary": f"Generated music. [attachment:{saved.id} {saved.filename}]",
+        "summary": f"Generated music. [attachment:{aid} {fname}]",
     }
     if meta:
         payload["extra"] = meta

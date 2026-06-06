@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_attachment_path(attachment_id: str) -> Tuple[str, Path]:
-    from codeagent.core.attachments import resolve_attachment_path
+    from seed.core.media_store import resolve_session_media_path
 
     aid = (attachment_id or "").strip()
     if not aid:
         raise ValueError("attachment_id required")
     agent_id, session_id = _active_agent_and_session()
-    p = resolve_attachment_path(agent_id, session_id, aid)
+    p = resolve_session_media_path(agent_id, session_id, aid)
     if not p or not p.is_file():
         raise ValueError(f"attachment not found: {aid}")
     return aid, p
@@ -226,10 +226,15 @@ async def audio_transcribe(
         )
 
     try:
-        from codeagent.core.audio_models import resolve_audio_preset
         from seed.core.agent_context import get_active_audio_preset
+        from seed_tools._preset_helpers import resolve_capability_preset
 
-        preset = resolve_audio_preset(get_active_audio_preset() or None)
+        preset = resolve_capability_preset(
+            "supports_audio",
+            "CODEAGENT_AUDIO_PRESET_ID",
+            get_active_audio_preset,
+            "audio transcription",
+        )
         text = call_audio_transcription(
             preset,
             path,
@@ -288,10 +293,15 @@ async def video_analyze(
         audio_path = extract_video_audio(path)
         if audio_path:
             try:
-                from codeagent.core.audio_models import resolve_audio_preset
                 from seed.core.agent_context import get_active_audio_preset
+                from seed_tools._preset_helpers import resolve_capability_preset
 
-                apreset = resolve_audio_preset(get_active_audio_preset() or None)
+                apreset = resolve_capability_preset(
+                    "supports_audio",
+                    "CODEAGENT_AUDIO_PRESET_ID",
+                    get_active_audio_preset,
+                    "audio transcription",
+                )
                 audio_transcript = call_audio_transcription(apreset, audio_path)
             except Exception as ex:
                 audio_transcript = f"[audio track unavailable: {ex}]"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import fnmatch
 import json
 import logging
 import mimetypes
@@ -35,7 +36,7 @@ def _read_image_data_url(path: Path) -> tuple[str, str]:
 
 
 def _resolve_attachment_paths(ids: List[str]) -> List[tuple[str, Path]]:
-    from codeagent.core.attachments import resolve_attachment_path
+    from seed.core.media_store import resolve_session_media_path
 
     agent_id, session_id = _active_agent_and_session()
     out: List[tuple[str, Path]] = []
@@ -43,7 +44,7 @@ def _resolve_attachment_paths(ids: List[str]) -> List[tuple[str, Path]]:
         aid = (aid or "").strip()
         if not aid:
             continue
-        p = resolve_attachment_path(agent_id, session_id, aid)
+        p = resolve_session_media_path(agent_id, session_id, aid)
         if not p or not p.is_file():
             raise ValueError(f"attachment not found: {aid}")
         out.append((aid, p))
@@ -69,11 +70,17 @@ def _build_vision_prompt(query: str, focus: str, detail: str, n_images: int) -> 
 
 def _call_vision_llm(paths: List[tuple[str, Path]], prompt: str) -> str:
     from seed.core.agent_context import get_active_vision_preset
+    from seed.core.llm_presets import llm_executor_from_resolved
+    from seed_tools._preset_helpers import resolve_capability_preset
 
     try:
-        from codeagent.core.vision_models import get_vision_executor
-
-        llm = get_vision_executor(get_active_vision_preset() or None)
+        preset = resolve_capability_preset(
+            "supports_vision",
+            "CODEAGENT_VISION_PRESET_ID",
+            get_active_vision_preset,
+            "vision",
+        )
+        llm = llm_executor_from_resolved(preset)
     except Exception as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
@@ -181,24 +188,54 @@ async def vision_analyze(
 
 
 def _accumulate_vision_usage(usage: dict[str, Any]) -> None:
+    """Accumulate raw token usage in session metadata (no cost calc — that's codeagent's domain)."""
     try:
-        from codeagent.core.usage_billing import merge_accumulated_usage
-        from codeagent.core.vision_models import resolve_preset_id
         from seed.core.llm_sess import load_or_create_chat_session, persist_chat_session
+        from seed.core.usage_accumulator import record_round_usage
+        from seed_tools._preset_helpers import resolve_capability_preset
 
         agent_id, session_id = _active_agent_and_session()
+        record_round_usage({"usage": usage})
+
         from seed.core.agent_context import get_active_vision_preset
 
-        preset = resolve_preset_id(get_active_vision_preset() or None)
-        model_name = str((preset or {}).get("model") or "vision")
+        try:
+            preset = resolve_capability_preset(
+                "supports_vision",
+                "CODEAGENT_VISION_PRESET_ID",
+                get_active_vision_preset,
+                "vision",
+            )
+            model_name = str(preset.get("model") or "vision")
+        except Exception:
+            model_name = "vision"
+
+        _USAGE_KEYS = (
+            "prompt_tokens",
+            "completion_tokens",
+            "total_tokens",
+            "prompt_cache_hit_tokens",
+            "prompt_cache_miss_tokens",
+        )
+
         sess = load_or_create_chat_session(session_id, agent_id)
         if not isinstance(sess.metadata, dict):
             sess.metadata = {}
         prev = sess.metadata.get("accumulated_usage", {}) or {}
-        acc, _, _ = merge_accumulated_usage(prev, model_name, usage)
-        per_model = acc.get("per_model") or {}
-        if isinstance(per_model, dict) and model_name in per_model:
-            per_model[model_name]["source"] = "vision_analyze"
+        acc: dict[str, Any] = {}
+        for k in _USAGE_KEYS:
+            v = usage.get(k, 0)
+            if isinstance(v, (int, float)):
+                acc[k] = int(prev.get(k, 0) or 0) + int(v)
+        per_model = dict(prev.get("per_model") or {})
+        model_acc = dict(per_model.get(model_name) or {})
+        for k in _USAGE_KEYS:
+            v = usage.get(k, 0)
+            if isinstance(v, (int, float)):
+                model_acc[k] = int(model_acc.get(k, 0) or 0) + int(v)
+        model_acc["source"] = "vision_analyze"
+        per_model[model_name] = model_acc
+        acc["per_model"] = per_model
         sess.metadata["accumulated_usage"] = acc
         persist_chat_session(sess, agent_id)
     except Exception:
@@ -237,15 +274,15 @@ async def vision_analyze_directory(
     batch_size: int = 4,
 ) -> str:
     """Scan a workspace directory for images and analyze in batches."""
-    from codeagent.core.attachments import scan_image_directory
     from seed.core.agent_context import get_active_project_workspace_cwd
+    from seed.core.media_store import save_session_media
 
     workspace = get_active_project_workspace_cwd()
     if not workspace:
         return json.dumps({"error": "no active project workspace for directory scan"}, ensure_ascii=False)
 
     try:
-        paths, truncated = scan_image_directory(
+        paths, truncated = _scan_image_directory(
             Path(workspace),
             directory,
             pattern=pattern or None,
@@ -258,19 +295,17 @@ async def vision_analyze_directory(
         return json.dumps({"error": f"no images in {directory}"}, ensure_ascii=False)
 
     agent_id, session_id = _active_agent_and_session()
-    from codeagent.core.attachments import save_attachment
-
     attachment_ids: List[str] = []
     for p in paths:
         try:
-            meta = save_attachment(
+            aid, _ = save_session_media(
                 agent_id=agent_id,
                 session_id=session_id,
                 raw_bytes=p.read_bytes(),
                 filename=p.name,
                 mime=mimetypes.guess_type(str(p))[0] or "image/png",
             )
-            attachment_ids.append(meta.id)
+            attachment_ids.append(aid)
         except Exception as e:
             logger.warning("skip %s: %s", p, e)
 
@@ -306,6 +341,59 @@ async def vision_analyze_directory(
             out["summary"] = f"Analyzed {len(attachment_ids)} images; full report at {ap}"
             return json.dumps(out, ensure_ascii=False)
     return combined
+
+
+_DEFAULT_IMAGE_GLOBS = ("*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif", "*.bmp")
+
+
+def _scan_image_directory(
+    workspace_root: Path,
+    rel_path: str,
+    *,
+    pattern: str | None = None,
+    max_files: int | None = None,
+) -> tuple[list[Path], bool]:
+    """Scan a directory for image files. Returns (paths, truncated)."""
+    root = workspace_root.resolve()
+    rel = (rel_path or "").strip().replace("\\", "/").lstrip("/")
+    if ".." in rel.split("/"):
+        raise ValueError("path traversal not allowed")
+    target = (root / rel).resolve()
+    if not str(target).startswith(str(root)):
+        raise ValueError("path outside workspace")
+    if not target.is_dir():
+        raise ValueError(f"not a directory: {rel_path}")
+
+    globs = _parse_image_globs(pattern)
+    limit = max_files or 32
+    found: list[Path] = []
+    truncated = False
+    for dirpath, _, filenames in os.walk(target):
+        for name in sorted(filenames):
+            if not _matches_image_glob(name, globs):
+                continue
+            p = Path(dirpath) / name
+            if not p.is_file():
+                continue
+            found.append(p.resolve())
+            if len(found) >= limit:
+                truncated = True
+                return found, truncated
+    return found, truncated
+
+
+def _parse_image_globs(pattern: str | None) -> tuple[str, ...]:
+    if pattern and pattern.strip():
+        return tuple(g.strip() for g in pattern.split(",") if g.strip())
+    return _DEFAULT_IMAGE_GLOBS
+
+
+def _matches_image_glob(name: str, globs: tuple[str, ...]) -> bool:
+    low = name.lower()
+    for g in globs:
+        if fnmatch.fnmatch(low, g.lower()):
+            return True
+    return False
 
 
 vision_analyze_def = Tool(

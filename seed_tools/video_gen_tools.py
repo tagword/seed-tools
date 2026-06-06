@@ -73,11 +73,16 @@ async def video_generate(
         return json.dumps({"error": "prompt required"}, ensure_ascii=False)
 
     try:
-        from codeagent.core.video_models import resolve_video_gen_preset
         from seed.core.agent_context import get_active_video_gen_preset
         from seed.core.model_providers import call_video_generations, resolve_provider_for_preset
+        from seed_tools._preset_helpers import resolve_capability_preset
 
-        preset = resolve_video_gen_preset(get_active_video_gen_preset() or None)
+        preset = resolve_capability_preset(
+            "supports_video_gen",
+            "CODEAGENT_VIDEO_GEN_PRESET_ID",
+            get_active_video_gen_preset,
+            "video generation",
+        )
     except ValueError as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
@@ -113,11 +118,11 @@ async def video_generate(
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
     agent_id, session_id = _active_agent_and_session()
-    from codeagent.core.attachments import save_attachment
+    from seed.core.media_store import save_session_media
 
     fname = f"generated-video-{uuid.uuid4().hex[:8]}.mp4"
     try:
-        saved = save_attachment(
+        aid, _ = save_session_media(
             agent_id=agent_id,
             session_id=session_id,
             raw_bytes=video_bytes,
@@ -138,13 +143,13 @@ async def video_generate(
         "frame_rate": float(frame_rate),
         "mode": gen_mode or None,
         "video": {
-            "attachment_id": saved.id,
-            "filename": saved.filename,
-            "url": f"/api/attachments/{saved.id}?session_id={session_id}&agent_id={agent_id}",
+            "attachment_id": aid,
+            "filename": fname,
+            "url": f"/api/attachments/{aid}?session_id={session_id}&agent_id={agent_id}",
             "kind": "generated_video",
             "mime": mime or "video/mp4",
         },
-        "summary": f"Generated video. [attachment:{saved.id} {saved.filename}]",
+        "summary": f"Generated video. [attachment:{aid} {fname}]",
     }
     if meta:
         payload["extra"] = meta

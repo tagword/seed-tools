@@ -67,11 +67,11 @@ def collect_reference_images(
         ids.extend(str(x).strip() for x in attachment_ids if str(x).strip())
     if not ids:
         return out
-    from codeagent.core.attachments import resolve_attachment_path
+    from seed.core.media_store import resolve_session_media_path
 
     agent_id, session_id = _active_agent_and_session()
     for aid in ids:
-        p = resolve_attachment_path(agent_id, session_id, aid)
+        p = resolve_session_media_path(agent_id, session_id, aid)
         if not p or not p.is_file():
             raise ValueError(f"reference attachment not found: {aid}")
         out.append(_attachment_to_image_ref(p))
@@ -93,11 +93,16 @@ async def image_generate(
         return json.dumps({"error": "prompt required"}, ensure_ascii=False)
 
     try:
-        from codeagent.core.image_gen_models import resolve_image_gen_preset
         from seed.core.agent_context import get_active_image_gen_preset
         from seed.core.model_providers import call_image_generations, normalize_image_size
+        from seed_tools._preset_helpers import resolve_capability_preset
 
-        preset = resolve_image_gen_preset(get_active_image_gen_preset() or None)
+        preset = resolve_capability_preset(
+            "supports_image_gen",
+            "CODEAGENT_IMAGE_GEN_PRESET_ID",
+            get_active_image_gen_preset,
+            "image generation",
+        )
     except ValueError as e:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
@@ -133,13 +138,13 @@ async def image_generate(
         return json.dumps({"error": str(e)}, ensure_ascii=False)
 
     agent_id, session_id = _active_agent_and_session()
-    from codeagent.core.attachments import save_attachment
+    from seed.core.media_store import save_session_media
 
     images_out: list[dict[str, Any]] = []
     for idx, raw in enumerate(raw_images):
         fname = f"generated-{uuid.uuid4().hex[:8]}-{idx + 1}.png"
         try:
-            meta = save_attachment(
+            aid, _ = save_session_media(
                 agent_id=agent_id,
                 session_id=session_id,
                 raw_bytes=raw,
@@ -148,9 +153,9 @@ async def image_generate(
             )
             images_out.append(
                 {
-                    "attachment_id": meta.id,
-                    "filename": meta.filename,
-                    "url": f"/api/attachments/{meta.id}?session_id={session_id}&agent_id={agent_id}",
+                    "attachment_id": aid,
+                    "filename": fname,
+                    "url": f"/api/attachments/{aid}?session_id={session_id}&agent_id={agent_id}",
                     "kind": "generated_image",
                 }
             )
