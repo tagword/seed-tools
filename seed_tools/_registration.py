@@ -49,6 +49,11 @@ from seed_tools.cron_apply_tools import (
     seed_cron_apply_handler,
 )
 from seed_tools.hub_tools import hub_send, hub_send_def
+from seed_tools.team_tools import (
+    call_agent, call_agent_tool_def,
+    dispatch, dispatch_tool_def,
+    parallel, parallel_tool_def,
+)
 from seed_tools.git import git_tool_handler
 from seed_tools.vision_tools import (
     vision_analyze,
@@ -205,6 +210,11 @@ def setup_builtin_tools():
     
     # Hub tools
     registry.register(hub_send_def, hub_send)
+
+    # Team tools
+    registry.register(call_agent_tool_def, call_agent)
+    registry.register(dispatch_tool_def, dispatch)
+    registry.register(parallel_tool_def, parallel)
     
     # Browser tools
     registry.register(browser_status_def, browser_status)
