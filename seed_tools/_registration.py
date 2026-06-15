@@ -8,31 +8,31 @@ from seed.core.tool_runtime import ToolExecutor, ToolRegistry
 logger = logging.getLogger(__name__)
 
 # ── Import all tool modules ──
-from seed_tools.misc_tools import (
+from seed_tools.misc import (
     echo_tool, echo_tool_def, calculate_tool, calc_tool_def,
     counter_tool, counter_tool_def, whoami_tool, whoami_tool_def,
     wbs_draft_tool, wbs_def, workspace_verify_handler, workspace_verify_def,
 )
-from seed_tools.file_read_tools import file_read_handler, file_read_def
-from seed_tools.file_write_tools import (
+from seed_tools.file import file_read_handler, file_read_def
+from seed_tools.file import (
     file_write_handler, file_write_def, file_edit_handler, file_edit_def,
-    file_search_handler, file_search_def, glob_tool_handler, glob_tool_def,
-    grep_tool_handler, grep_tool_def,
+    file_search_handler, file_search_def, glob_handler, glob_def,
+    grep_handler, grep_def,
 )
-from seed_tools.artifact_tools import artifact_read_handler, artifact_read_def
-from seed_tools.web_tools import web_fetch_handler, web_fetch_def, web_search_handler, web_search_def
-from seed_tools.code_analyze_tools import (
+from seed_tools.artifact import artifact_read_handler, artifact_read_def
+from seed_tools.web import web_fetch_handler, web_fetch_def, web_search_handler, web_search_def
+from seed_tools.code_check import (
     code_analyze_handler,
     code_analyze_def,
     code_check_handler,
     code_check_def,
 )
-from seed_tools.todo_tools import todo_tool_handler, todo_tool_def
-from seed_tools.search_tools import tool_search_handler, tool_search_def
-from seed_tools.notebook_tools import notebook_edit_handler, notebook_edit_def
-from seed_tools.memory_search_tools import memory_search_handler, memory_search_def
-from seed_tools.self_reflect_tools import self_reflect_tool, reflect_def
-from seed_tools.cron_query_tools import (
+from seed_tools.todo import todo_handler, todo_def
+from seed_tools.tool_search import tool_search_handler, tool_search_def
+from seed_tools.notebook import notebook_edit_handler, notebook_edit_def
+from seed_tools.memory_search import memory_search_handler, memory_search_def
+from seed_tools.self_reflect import self_reflect_tool, reflect_def
+from seed_tools.cron import (
     codeagent_cron_path_def,
     codeagent_cron_path_handler,
     codeagent_cron_reload_def,
@@ -42,29 +42,29 @@ from seed_tools.cron_query_tools import (
     seed_cron_reload_def,
     seed_cron_reload_handler,
 )
-from seed_tools.cron_apply_tools import (
+from seed_tools.cron import (
     codeagent_cron_apply_def,
     codeagent_cron_apply_handler,
     seed_cron_apply_def,
     seed_cron_apply_handler,
 )
-from seed_tools.hub_tools import hub_send, hub_send_def
-from seed_tools.team_tools import (
+from seed_tools.hub import hub_send, hub_send_def
+from seed_tools.team import (
     call_agent, call_agent_tool_def,
     dispatch, dispatch_tool_def,
     parallel, parallel_tool_def,
 )
-from seed_tools.git import git_tool_handler
-from seed_tools.vision_tools import (
+from seed_tools.git import git_handler
+from seed_tools.vision import (
     vision_analyze,
     vision_analyze_def,
     vision_analyze_directory,
     vision_analyze_directory_def,
 )
-from seed_tools.image_gen_tools import image_generate, image_generate_def
-from seed_tools.music_gen_tools import music_generate, music_generate_def
-from seed_tools.video_gen_tools import video_generate, video_generate_def
-from seed_tools.media_tools import (
+from seed_tools.image_gen import image_generate, image_generate_def
+from seed_tools.music_gen import music_generate, music_generate_def
+from seed_tools.video_gen import video_generate, video_generate_def
+from seed_tools.media import (
     attachment_resolve_path,
     attachment_resolve_path_def,
     audio_transcribe,
@@ -88,32 +88,32 @@ from seed_tools.browser import (
     browser_screenshot,
     browser_screenshot_def,
 )
-from seed_tools.shell_tool import bash_def, bash_tool_handler
+from seed_tools.bash import bash_def, bash_handler
 
 # ── Migrated tool_modules tools ──
-from seed_tools.refactor_tools import refactor_handler, refactor_tool_def
-from seed_tools.diagram_tools import diagram_handler, diagram_tool_def
-from seed_tools.api_docs_tools import api_docs_handler, api_docs_tool_def
-from seed_tools.scaffold_tools import scaffold_handler, scaffold_tool_def
-from seed_tools.project_tools import project_handler, project_tool_def
-from seed_tools.db_tools import db_handler, db_tool_def
-from seed_tools.deps_check_tools import deps_check_handler, deps_check_tool_def
-from seed_tools.test_gen_tools import test_gen_handler, test_gen_tool_def
-from seed_tools.test_run_tools import test_run_handler, test_run_def
-from seed_tools.symbol_tools import (
+from seed_tools.refactor import refactor_handler, refactor_tool_def
+from seed_tools.diagram import diagram_handler, diagram_tool_def
+from seed_tools.api_docs import api_docs_handler, api_docs_tool_def
+from seed_tools.scaffold import scaffold_handler, scaffold_tool_def
+from seed_tools.project import project_handler, project_tool_def
+from seed_tools.db import db_handler, db_tool_def
+from seed_tools.deps_check import deps_check_handler, deps_check_tool_def
+from seed_tools.test_gen import test_gen_handler, test_gen_tool_def
+from seed_tools.test_run import test_run_handler, test_run_def
+from seed_tools.symbol import (
     symbol_index_refresh_def,
     symbol_index_refresh_handler,
     symbol_search_def,
     symbol_search_handler,
 )
-from seed_tools.lsp_tools import (
+from seed_tools.lsp import (
     lsp_definition_def,
     lsp_definition_handler,
     lsp_diagnostics_def,
     lsp_diagnostics_handler,
 )
-from seed_tools.patch_tools import apply_patch_def, apply_patch_handler
-from seed_tools.mcp_tools import (
+from seed_tools.patch import apply_patch_def, apply_patch_handler
+from seed_tools.mcp import (
     mcp_call_def,
     mcp_call_handler,
     mcp_list_tools_def,
@@ -121,9 +121,9 @@ from seed_tools.mcp_tools import (
     mcp_servers_def,
     mcp_servers_handler,
 )
-from seed_tools.pipeline_tools import pipeline_handler, pipeline_tool_def
-from seed_tools.instruction_tools import instruction_read_def, instruction_read_handler
-from seed_tools.deploy_tools import deploy_handler, deploy_tool_def
+from seed_tools.pipeline import pipeline_handler, pipeline_tool_def
+from seed_tools.instruction import instruction_read_def, instruction_read_handler
+from seed_tools.deploy import deploy_handler, deploy_tool_def
 
 # ── Create missing tool definitions ──
 git_tool_def = Tool(
@@ -151,27 +151,16 @@ def setup_builtin_tools():
     registry.register(wbs_def, wbs_draft_tool)
     registry.register(workspace_verify_def, workspace_verify_handler)
 
-    # Shell (bash_tool + bash_exec alias for prompts / acquired-tool policy)
-    registry.register(bash_def, bash_tool_handler)
-    registry.register(
-        replace(
-            bash_def,
-            name="bash_exec",
-            description=(
-                "Execute shell commands with safety checks (same implementation as bash_tool; "
-                "use acquired tools policy to enable)."
-            ),
-        ),
-        bash_tool_handler,
-    )
+    # Shell (bash + bash alias for prompts / acquired-tool policy)
+    registry.register(bash_def, bash_handler)
 
     # File tools
     registry.register(file_read_def, file_read_handler)
     registry.register(file_write_def, file_write_handler)
     registry.register(file_edit_def, file_edit_handler)
     registry.register(file_search_def, file_search_handler)
-    registry.register(glob_tool_def, glob_tool_handler)
-    registry.register(grep_tool_def, grep_tool_handler)
+    registry.register(glob_def, glob_handler)
+    registry.register(grep_def, grep_handler)
     
     # Artifact tools
     registry.register(artifact_read_def, artifact_read_handler)
@@ -185,7 +174,7 @@ def setup_builtin_tools():
     registry.register(code_analyze_def, code_analyze_handler)
     
     # Todo tools
-    registry.register(todo_tool_def, todo_tool_handler)
+    registry.register(todo_def, todo_handler)
     
     # Search tools
     registry.register(tool_search_def, tool_search_handler)
@@ -206,7 +195,7 @@ def setup_builtin_tools():
     registry.register(codeagent_cron_apply_def, codeagent_cron_apply_handler)
     
     # Git tool
-    registry.register(git_tool_def, git_tool_handler)
+    registry.register(git_tool_def, git_handler)
     
     # Hub tools
     registry.register(hub_send_def, hub_send)

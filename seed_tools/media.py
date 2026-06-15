@@ -317,7 +317,7 @@ async def video_analyze(
             payload["audio_transcript"] = audio_transcript
         return json.dumps(payload, ensure_ascii=False)
 
-    from seed_tools.vision_tools import _build_vision_prompt, _call_vision_llm
+    from seed_tools.vision import _build_vision_prompt, _call_vision_llm
 
     frame_pairs = [(f"frame-{i+1}", p) for i, p in enumerate(frames)]
     bs = 4

@@ -7,6 +7,7 @@ license = { text = "MIT" }
 authors = [{ name = "Seed Contributors" }]
 dependencies = [
     "seed",
+    "seed-model-providers>=1.0.0",
 ]
 
 [project.optional-dependencies]

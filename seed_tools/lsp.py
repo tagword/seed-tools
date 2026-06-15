@@ -102,7 +102,7 @@ def lsp_diagnostics_handler(filepath: str, project_root: str = "") -> str:
             lines.append(out[:8000])
 
     if not lines:
-        from seed_tools.code_check_tool import code_check_tool
+        from seed_tools.code_check import code_check_tool
 
         lines.append(code_check_tool(filepath=str(fp), language="auto", fix=False))
 

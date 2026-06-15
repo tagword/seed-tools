@@ -130,7 +130,7 @@ def web_search_handler(query: str, num_results: int = 5) -> List[Dict[str, str]]
         return [{"error": f"Web search error: {e}"}]
 
 web_search_def = Tool(
-    name="web_search_tool",
+    name="web_search",
     description="Search the web for information",
     parameters={
         "query": {"type": "string", "required": True, "description": "Search query"},

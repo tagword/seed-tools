@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from seed_tools.patch_tools import apply_patch_handler
+from seed_tools.patch import apply_patch_handler
 
 
 def test_apply_patch_dry_run(tmp_path: Path) -> None:

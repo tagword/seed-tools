@@ -4,7 +4,7 @@ import subprocess
 import logging
 logger = logging.getLogger(__name__)
 
-def git_tool_handler(command: str, args: str = "", message: str = "") -> str:
+def git_handler(command: str, args: str = "", message: str = "") -> str:
     """
     统一的 git 操作工具。支持 init / status / diff / commit / log / branch / push / pull。
     

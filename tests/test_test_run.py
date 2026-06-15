@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from seed_tools.test_run_tools import _detect_framework
+from seed_tools.test_run import _detect_framework
 
 
 def test_detect_pytest(tmp_path: Path) -> None:

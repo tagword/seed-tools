@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from seed_tools.symbol_tools import symbol_search_handler
+from seed_tools.symbol import symbol_search_handler
 
 
 def test_symbol_search_finds_name(tmp_path, monkeypatch) -> None:

@@ -28,7 +28,7 @@ def tool_search_handler(query: str) -> str:
         return json.dumps([{"error": f"Error searching tools: {e}"}])
 
 tool_search_def = Tool(
-    name="tool_search_tool",
+    name="tool_search",
     description="Search available tools by name or description",
     parameters={
         "query": {"type": "string", "required": True, "description": "Search query"}

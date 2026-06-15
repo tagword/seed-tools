@@ -94,7 +94,7 @@ async def image_generate(
 
     try:
         from seed.core.agent_context import get_active_image_gen_preset
-        from seed.core.model_providers import call_image_generations, normalize_image_size
+        from seed_model_providers import call_image_generations, normalize_image_size
         from seed_tools._preset_helpers import resolve_capability_preset
 
         preset = resolve_capability_preset(
@@ -165,7 +165,7 @@ async def image_generate(
     if not images_out:
         return json.dumps({"error": "failed to save generated images"}, ensure_ascii=False)
 
-    from seed.core.model_providers import resolve_provider_for_preset
+    from seed_model_providers import resolve_provider_for_preset
 
     payload = {
         "prompt": text,
@@ -241,7 +241,7 @@ def call_image_generations(
     quality: str = "",
     reference_images: Optional[List[str]] = None,
 ) -> List[bytes]:
-    from seed.core.model_providers import call_image_generations as _dispatch
+    from seed_model_providers import call_image_generations as _dispatch
 
     return _dispatch(
         preset,

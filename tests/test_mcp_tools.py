@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from seed_tools.mcp_tools import mcp_servers_handler
+from seed_tools.mcp import mcp_servers_handler
 
 
 def test_mcp_servers_disabled(monkeypatch) -> None:

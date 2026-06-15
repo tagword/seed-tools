@@ -13,7 +13,7 @@ _TASK_CMD_RE = re.compile(
 )
 
 
-def bash_tool_handler(command: str, timeout: int = 30, cwd: Optional[str] = None, detach: bool = False) -> str:
+def bash_handler(command: str, timeout: int = 30, cwd: Optional[str] = None, detach: bool = False) -> str:
     """Execute a shell command with safety checks (local or Docker backend)."""
     from seed.core.agent_context import get_active_project_workspace_cwd
 
@@ -72,7 +72,7 @@ def _handle_task_command(action: str, task_id: Optional[str], tail: int, cwd: Op
     return f"Unknown task action: {action}"
 
 bash_def = Tool(
-    name="bash_tool",
+    name="bash",
     description="Execute shell commands with safety checks",
     parameters={
         "command": {"type": "string", "required": True, "description": "Shell command to execute"},
@@ -82,4 +82,3 @@ bash_def = Tool(
     },
     returns="string: Command output or error message"
 )
-

@@ -6,7 +6,7 @@ from seed.core.paths import agent_id_default
 
 logger = logging.getLogger(__name__)
 
-def todo_tool_handler(
+def todo_handler(
     operation: str,
     content: str = "",
     todo_id: str = "",
@@ -91,8 +91,8 @@ def todo_tool_handler(
     except Exception as e:
         return f"待办事项操作出错：{e}"
 
-todo_tool_def = Tool(
-    name="todo_tool",
+todo_def = Tool(
+    name="todo",
     description="项目范围的待办事项管理工具，支持创建/查询/更新/删除操作。operation 参数指定操作类型（create/list/update/delete），其他参数按需传入。scope 参数控制操作范围：session（默认，仅当前会话）或 project（项目全部）。",
     parameters={
         "operation": {

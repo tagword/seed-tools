@@ -33,7 +33,7 @@ def notebook_edit_handler(filepath: str, cell_index: int, cell_code: str, cell_t
         return f"Error editing notebook: {e}"
 
 notebook_edit_def = Tool(
-    name="notebook_edit_tool",
+    name="notebook_edit",
     description="Edit cells in a Jupyter notebook",
     parameters={
         "filepath": {"type": "string", "required": True, "description": "Path to the .ipynb file"},

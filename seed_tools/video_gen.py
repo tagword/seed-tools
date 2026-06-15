@@ -74,7 +74,7 @@ async def video_generate(
 
     try:
         from seed.core.agent_context import get_active_video_gen_preset
-        from seed.core.model_providers import call_video_generations, resolve_provider_for_preset
+        from seed_model_providers import call_video_generations, resolve_provider_for_preset
         from seed_tools._preset_helpers import resolve_capability_preset
 
         preset = resolve_capability_preset(

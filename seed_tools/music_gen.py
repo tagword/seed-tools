@@ -64,7 +64,7 @@ async def music_generate(
 
     try:
         from seed.core.agent_context import get_active_music_preset
-        from seed.core.model_providers import call_music_generations, resolve_provider_for_preset
+        from seed_model_providers import call_music_generations, resolve_provider_for_preset
         from seed_tools._preset_helpers import resolve_capability_preset
 
         preset = resolve_capability_preset(

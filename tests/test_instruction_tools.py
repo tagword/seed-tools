@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from seed.integrations.instruction_release import publish_release
-from seed_tools.instruction_tools import instruction_read_handler
+from seed_tools.instruction import instruction_read_handler
 
 
 def test_instruction_read_section(tmp_path: Path, monkeypatch) -> None:

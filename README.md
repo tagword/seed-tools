@@ -9,7 +9,7 @@ This package provides a comprehensive set of tools that LLM agents can use to in
 | Category | Tools |
 |----------|-------|
 | **File** | file_read, file_write, file_search, grep_tool, glob_tool, artifact_read |
-| **Shell** | bash_tool, bash_exec |
+| **Shell** | bash_tool, bash |
 | **Code** | code_check, project, refactor, test_gen |
 | **Web** | web_search_tool, web_fetch |
 | **Browser** | browser_ensure_running, browser_connect, browser_navigate, browser_screenshot, browser_new_page, browser_targets, browser_status |

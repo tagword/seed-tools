@@ -4,10 +4,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from seed_tools.file_write_tools import (
+from seed_tools.file import (
     file_search_handler,
-    glob_tool_handler,
-    grep_tool_handler,
+    glob_handler,
+    grep_handler,
 )
 
 
@@ -21,7 +21,7 @@ def test_grep_skips_dist_and_caps_line_length(tmp_path: Path, monkeypatch) -> No
     _write(tmp_path / "src" / "app.py", "TARGET_HERE\n")
     _write(tmp_path / "web" / "dist" / "assets" / "index.js", "TARGET_HERE\n" + ("x" * 5000))
 
-    results = grep_tool_handler("TARGET_HERE", directory=str(tmp_path))
+    results = grep_handler("TARGET_HERE", directory=str(tmp_path))
     assert len(results) == 1
     assert "src/app.py" in results[0].replace("\\", "/")
     assert "dist" not in results[0]
@@ -32,7 +32,7 @@ def test_grep_caps_long_line(tmp_path: Path, monkeypatch) -> None:
     long_line = "MATCH_" + ("z" * 800)
     _write(tmp_path / "main.py", long_line + "\n")
 
-    results = grep_tool_handler("MATCH_", directory=str(tmp_path))
+    results = grep_handler("MATCH_", directory=str(tmp_path))
     assert len(results) == 1
     assert "[line truncated" in results[0]
     assert len(results[0]) < 700
@@ -43,7 +43,7 @@ def test_glob_skips_node_modules(tmp_path: Path, monkeypatch) -> None:
     _write(tmp_path / "lib" / "util.py", "# ok\n")
     _write(tmp_path / "node_modules" / "pkg" / "index.js", "// skip\n")
 
-    matches = glob_tool_handler("*.py", directory=str(tmp_path))
+    matches = glob_handler("*.py", directory=str(tmp_path))
     normalized = [m.replace("\\", "/") for m in matches]
     assert any("/lib/util.py" in m for m in normalized)
     assert not any("node_modules" in m for m in normalized)
