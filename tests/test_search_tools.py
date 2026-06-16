@@ -22,9 +22,11 @@ def test_grep_skips_dist_and_caps_line_length(tmp_path: Path, monkeypatch) -> No
     _write(tmp_path / "web" / "dist" / "assets" / "index.js", "TARGET_HERE\n" + ("x" * 5000))
 
     results = grep_handler("TARGET_HERE", directory=str(tmp_path))
-    assert len(results) == 1
-    assert "src/app.py" in results[0].replace("\\", "/")
-    assert "dist" not in results[0]
+    assert len(results) == 1, f"expected 1 result, got {len(results)}: {results}"
+    norm = results[0].replace("\\", "/")
+    assert "src/app.py" in norm, f"expected src/app.py in {norm}"
+    # 检查 /dist/ 作为目录段被跳过，而非临时目录名中的子串（"skips_dist"）
+    assert "/dist/" not in norm, f"should skip dist/ segment, got {norm}"
 
 
 def test_grep_caps_long_line(tmp_path: Path, monkeypatch) -> None:
@@ -45,8 +47,9 @@ def test_glob_skips_node_modules(tmp_path: Path, monkeypatch) -> None:
 
     matches = glob_handler("*.py", directory=str(tmp_path))
     normalized = [m.replace("\\", "/") for m in matches]
-    assert any("/lib/util.py" in m for m in normalized)
-    assert not any("node_modules" in m for m in normalized)
+    assert any("/lib/util.py" in m for m in normalized), f"expected lib/util.py in {normalized}"
+    # 检查 /node_modules/ 作为目录段被跳过，而非临时目录名中的子串
+    assert not any("/node_modules/" in m for m in normalized), f"should skip node_modules/, got {normalized}"
 
 
 def test_file_search_skips_build_dir(tmp_path: Path, monkeypatch) -> None:
