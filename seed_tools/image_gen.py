@@ -11,6 +11,7 @@ import uuid
 from pathlib import Path
 from typing import Any, List, Optional
 
+from seed.core import env_access as _ea
 from seed.core.models import Tool
 from seed_tools.shell_helpers import _active_agent_and_session
 
@@ -31,13 +32,13 @@ _ALLOWED_SIZES = frozenset(
 
 def _max_images() -> int:
     try:
-        return max(1, min(int(os.environ.get("CODEAGENT_IMAGE_GEN_MAX_COUNT", "4") or 4), 15))
+        return max(1, min(_ea.pick_int(4, *_ea.IMAGE_GEN_MAX_COUNT), 15))
     except ValueError:
         return 4
 
 
 def _default_size() -> str:
-    return os.environ.get("CODEAGENT_IMAGE_GEN_DEFAULT_SIZE", "1024x1024").strip() or "1024x1024"
+    return (_ea.pick_nonempty(*_ea.IMAGE_GEN_DEFAULT_SIZE) or "1024x1024").strip()
 
 
 def _attachment_to_image_ref(path: Path) -> str:

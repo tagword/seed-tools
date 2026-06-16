@@ -8,6 +8,7 @@ import os
 import uuid
 from typing import Any, List, Optional
 
+from seed.core import env_access as _ea
 from seed.core.models import Tool
 from seed_tools.shell_helpers import _active_agent_and_session
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _public_attachment_url(agent_id: str, session_id: str, attachment_id: str) -> str:
-    base = os.environ.get("CODEAGENT_PUBLIC_BASE_URL", "").strip().rstrip("/")
+    base = (_ea.pick_nonempty(*_ea.PUBLIC_BASE_URL) or "").strip().rstrip("/")
     if not base:
         raise ValueError(
             "attachment_ids for image-to-video require CODEAGENT_PUBLIC_BASE_URL "

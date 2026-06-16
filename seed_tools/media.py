@@ -15,6 +15,7 @@ from typing import Any, List, Optional, Tuple
 
 import requests
 
+from seed.core import env_access as _ea
 from seed.core.models import Tool
 from seed_tools.artifact_helpers import _artifact_summary, _artifact_write_text
 from seed_tools.shell_helpers import _active_agent_and_session, _env_truthy
@@ -65,7 +66,7 @@ def call_audio_transcription(
     mime, _ = mimetypes.guess_type(str(path))
     mime = mime or "application/octet-stream"
     url = _transcriptions_url(str(preset.get("base_url") or ""))
-    timeout = int(os.environ.get("CODEAGENT_AUDIO_TRANSCRIBE_TIMEOUT_SEC", "300") or 300)
+    timeout = _ea.pick_int(300, *_ea.AUDIO_TRANSCRIBE_TIMEOUT_SEC)
 
     data: dict[str, str] = {"model": model, "response_format": "json"}
     if language.strip():
@@ -104,14 +105,14 @@ def call_audio_transcription(
 
 def _video_max_frames() -> int:
     try:
-        return max(1, min(int(os.environ.get("CODEAGENT_VIDEO_MAX_FRAMES", "8") or 8), 16))
+        return max(1, min(_ea.pick_int(8, *_ea.VIDEO_MAX_FRAMES), 16))
     except ValueError:
         return 8
 
 
 def _video_frame_interval() -> float:
     try:
-        return max(0.5, float(os.environ.get("CODEAGENT_VIDEO_FRAME_INTERVAL_SEC", "2") or 2))
+        return max(0.5, float(_ea.pick_default("2", *_ea.VIDEO_FRAME_INTERVAL_SEC)))
     except ValueError:
         return 2.0
 
@@ -188,7 +189,7 @@ def extract_video_audio(path: Path) -> Optional[Path]:
 
 def _maybe_artifact(text: str, *, kind: str, title: str) -> tuple[str, Optional[str]]:
     try:
-        max_inline = int(os.environ.get("CODEAGENT_MEDIA_RESULT_MAX_CHARS", "12000") or 12000)
+        max_inline = _ea.pick_int(12000, *_ea.MEDIA_RESULT_MAX_CHARS)
     except ValueError:
         max_inline = 12000
     if len(text) <= max_inline or not _env_truthy("SEED_TOOL_ARTIFACTS", "1"):

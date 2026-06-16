@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 from typing import Any, List, Optional
 
+from seed.core import env_access as _ea
 from seed.core.models import Tool
 from seed_tools.artifact_helpers import _artifact_summary, _artifact_write_text
 from seed_tools.shell_helpers import _active_agent_and_session, _env_truthy
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def _vision_analyze_max_images() -> int:
     try:
-        return int(os.environ.get("CODEAGENT_VISION_ANALYZE_MAX_IMAGES", "4") or 4)
+        return _ea.pick_int(4, *_ea.VISION_ANALYZE_MAX_IMAGES)
     except ValueError:
         return 4
 
@@ -93,7 +94,7 @@ def _call_vision_llm(paths: List[tuple[str, Path]], prompt: str) -> str:
         content.append({"type": "image_url", "image_url": {"url": url}})
 
     try:
-        max_tokens = int(os.environ.get("CODEAGENT_VISION_MAX_TOKENS", "4096") or 4096)
+        max_tokens = _ea.pick_int(4096, *_ea.VISION_MAX_TOKENS)
     except ValueError:
         max_tokens = 4096
 
@@ -165,7 +166,7 @@ async def vision_analyze(
         _accumulate_vision_usage(usage)
 
     try:
-        max_inline = int(os.environ.get("CODEAGENT_VISION_RESULT_MAX_CHARS", "12000") or 12000)
+        max_inline = _ea.pick_int(12000, *_ea.VISION_RESULT_MAX_CHARS)
     except ValueError:
         max_inline = 12000
 

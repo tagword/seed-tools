@@ -8,6 +8,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Optional
 
+from seed.core import env_access as _ea
 from seed.core.models import Tool
 
 
@@ -29,7 +30,7 @@ def _detect_framework(cwd: Path) -> str:
 
 
 def _bundled_tools_active() -> bool:
-    return bool(os.environ.get("CODEAGENT_BUNDLED_TOOLS", "").strip())
+    return bool(_ea.pick_nonempty(*_ea.BUNDLED_TOOLS))
 
 
 def _run_pytest_inprocess(work: Path, extra_args: str) -> tuple[int, str]:
