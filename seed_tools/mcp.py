@@ -65,7 +65,11 @@ def mcp_call_handler(
         return f"Invalid arguments JSON: {e}"
     if not isinstance(args_obj, dict):
         return "arguments must be a JSON object"
-    timeout = float(pick_default("120", *MCP_CALL_TIMEOUT) or "120")
+    try:
+        timeout = float(pick_default("120", *MCP_CALL_TIMEOUT) or "120")
+    except (TypeError, ValueError):
+        timeout = 120.0
+    timeout = max(1.0, min(timeout, 900.0))
     try:
         return get_mcp_manager().get_session(sid).call_tool(tname, args_obj, timeout=timeout)
     except MCPError as e:

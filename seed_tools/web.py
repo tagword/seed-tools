@@ -18,9 +18,20 @@ logger = logging.getLogger(__name__)
 def web_fetch_handler(url: str, timeout: int = 10) -> str:
     """Fetch content from a URL"""
     try:
+        try:
+            max_bytes = int(os.environ.get("SEED_WEB_FETCH_MAX_BYTES", "2097152") or 2097152)
+        except Exception:
+            max_bytes = 2_097_152
+        max_bytes = max(32_768, min(max_bytes, 20_000_000))
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=timeout) as response:
-            content = response.read().decode("utf-8", errors="replace")
+            raw = response.read(max_bytes + 1)
+            body_truncated = len(raw) > max_bytes
+            if body_truncated:
+                raw = raw[:max_bytes]
+            content = raw.decode("utf-8", errors="replace")
+            if body_truncated:
+                content += f"\n\n...[body truncated after {max_bytes} bytes]"
 
             # Always try to persist the full body as an artifact (large pages often blow up context).
             ap = _artifact_write_text(kind="web_fetch", name_hint="page", text=content)
@@ -88,6 +99,7 @@ def web_fetch_handler(url: str, timeout: int = 10) -> str:
                 "mode": "chunk_summary",
                 "url": url,
                 "saved_to": ap,
+                "body_truncated": body_truncated,
                 "chars": len(content),
                 "chunks_summarized": chunks_done,
                 "max_chunks": max_chunks,
@@ -116,13 +128,23 @@ def web_search_handler(query: str, num_results: int = 5) -> List[Dict[str, str]]
     """Search the web for information"""
     try:
         from ddgs import DDGS
-        
+
+        try:
+            n = int(num_results)
+        except Exception:
+            n = 5
+        n = max(1, min(n, 20))
         results = []
+        seen_urls = set()
         with DDGS() as ddgs:
-            for r in ddgs.text(query, max_results=num_results):
+            for r in ddgs.text(query, max_results=n):
+                href = r.get("href", "")
+                if href in seen_urls:
+                    continue
+                seen_urls.add(href)
                 results.append({
                     "title": r.get("title", ""),
-                    "url": r.get("href", ""),
+                    "url": href,
                     "snippet": r.get("body", ""),
                 })
         return results
