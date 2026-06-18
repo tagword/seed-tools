@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from seed_tools.mcp import mcp_call_handler, mcp_servers_handler
+from seed.integrations.mcp_client import MCPSkillInfo
+from seed_tools.mcp import (
+    mcp_call_handler,
+    mcp_list_skills_handler,
+    mcp_servers_handler,
+    mcp_skill_handler,
+)
 
 
 def test_mcp_servers_disabled(monkeypatch) -> None:
@@ -40,3 +46,36 @@ def test_mcp_call_clamps_timeout(monkeypatch) -> None:
         out = mcp_call_handler("fs", "tool", "{}")
     assert out == "ok"
     assert mock_sess.call_tool.call_args.kwargs["timeout"] == 900.0
+
+
+def test_mcp_list_skills(monkeypatch) -> None:
+    monkeypatch.setenv("SEED_MCP_ENABLED", "1")
+    mock_sess = MagicMock()
+    mock_sess.list_skills.return_value = [
+        MCPSkillInfo(name="summarize", description="Summarize text", arguments=[]),
+    ]
+    with patch("seed.integrations.mcp_client.mcp_globally_enabled", return_value=True), patch(
+        "seed.integrations.mcp_client.get_mcp_manager"
+    ) as gm:
+        gm.return_value.get_session.return_value = mock_sess
+        out = mcp_list_skills_handler("docs")
+    assert "summarize" in out
+    assert "Summarize text" in out
+
+
+def test_mcp_skill_clamps_timeout(monkeypatch) -> None:
+    monkeypatch.setenv("SEED_MCP_ENABLED", "1")
+    import seed.core.env_access as _ea
+
+    monkeypatch.setattr(_ea, "MCP_CALL_TIMEOUT", ("SEED_MCP_CALL_TIMEOUT",))
+    monkeypatch.setattr(_ea, "pick_default", lambda default, *keys: "99999")
+
+    mock_sess = MagicMock()
+    mock_sess.call_skill.return_value = "skill result"
+    with patch("seed.integrations.mcp_client.mcp_globally_enabled", return_value=True), patch(
+        "seed.integrations.mcp_client.get_mcp_manager"
+    ) as gm:
+        gm.return_value.get_session.return_value = mock_sess
+        out = mcp_skill_handler("docs", "summarize", '{"text":"hello"}')
+    assert out == "skill result"
+    assert mock_sess.call_skill.call_args.kwargs["timeout"] == 900.0

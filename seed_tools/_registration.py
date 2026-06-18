@@ -116,8 +116,12 @@ from seed_tools.patch import apply_patch_def, apply_patch_handler
 from seed_tools.mcp import (
     mcp_call_def,
     mcp_call_handler,
+    mcp_list_skills_def,
+    mcp_list_skills_handler,
     mcp_list_tools_def,
     mcp_list_tools_handler,
+    mcp_skill_def,
+    mcp_skill_handler,
     mcp_servers_def,
     mcp_servers_handler,
 )
@@ -234,6 +238,8 @@ def setup_builtin_tools():
     registry.register(mcp_servers_def, mcp_servers_handler)
     registry.register(mcp_list_tools_def, mcp_list_tools_handler)
     registry.register(mcp_call_def, mcp_call_handler)
+    registry.register(mcp_list_skills_def, mcp_list_skills_handler)
+    registry.register(mcp_skill_def, mcp_skill_handler)
 
     # Code intelligence (Phase 4)
     registry.register(symbol_search_def, symbol_search_handler)
