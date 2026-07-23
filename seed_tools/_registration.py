@@ -128,6 +128,7 @@ from seed_tools.mcp import (
 from seed_tools.pipeline import pipeline_handler, pipeline_tool_def
 from seed_tools.instruction import instruction_read_def, instruction_read_handler
 from seed_tools.deploy import deploy_handler, deploy_tool_def
+from seed_tools.skill_discover import skill_discover, skill_discover_def
 
 # ── Create missing tool definitions ──
 git_tool_def = Tool(
@@ -182,6 +183,9 @@ def setup_builtin_tools():
     
     # Search tools
     registry.register(tool_search_def, tool_search_handler)
+    
+    # Skill discovery
+    registry.register(skill_discover_def, skill_discover)
     
     # Notebook tools
     registry.register(notebook_edit_def, notebook_edit_handler)
