@@ -1,6 +1,6 @@
 [project]
 name = "seed-toolbox"
-version = "1.0.3"
+version = "1.0.4"
 description = "Builtin LLM-callable tools for the Seed kernel (depends on seed only; hosts like CodeAgent consume this package)"
 requires-python = ">=3.9"
 license = { text = "MIT" }

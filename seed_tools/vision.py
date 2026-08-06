@@ -69,7 +69,7 @@ def _build_vision_prompt(query: str, focus: str, detail: str, n_images: int) -> 
     return "\n".join(parts)
 
 
-def _call_vision_llm(paths: List[tuple[str, Path]], prompt: str) -> str:
+def _call_vision_llm(paths: List[tuple[str, Path]], prompt: str) -> tuple[str, Optional[dict]]:
     from seed.core.agent_context import get_active_vision_preset
     from seed.core.llm_presets import llm_executor_from_resolved
     from seed_tools._preset_helpers import resolve_capability_preset
@@ -83,14 +83,14 @@ def _call_vision_llm(paths: List[tuple[str, Path]], prompt: str) -> str:
         )
         llm = llm_executor_from_resolved(preset)
     except Exception as e:
-        return json.dumps({"error": str(e)}, ensure_ascii=False)
+        return json.dumps({"error": str(e)}, ensure_ascii=False), None
 
     content: List[dict[str, Any]] = [{"type": "text", "text": prompt}]
     for _aid, p in paths:
         try:
             url, _mime = _read_image_data_url(p)
         except Exception as ex:
-            return json.dumps({"error": f"read {p.name}: {ex}"}, ensure_ascii=False)
+            return json.dumps({"error": f"read {p.name}: {ex}"}, ensure_ascii=False), None
         content.append({"type": "image_url", "image_url": {"url": url}})
 
     try:

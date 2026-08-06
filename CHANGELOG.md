@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4 (2026-08-06)
+
+- feat(vision): `_call_vision_llm` 返回 `(text, usage)` — vision_analyze 结果附带 usage 统计（token 用量），media.py 视频分析同步兼容
+- chore: bump version to 1.0.3 for next development cycle
+
 ## 1.0.3 (2026-07-24)
 
 - feat: MCP skill 工具 — mcp_list_skills/mcp_skill_handler + transport 感知展示
