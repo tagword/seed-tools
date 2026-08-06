@@ -19,17 +19,20 @@ def seed_cron_apply_handler(content: str) -> str:
     except json.JSONDecodeError as e:
         return f"Error: invalid JSON: {e}"
     try:
-        from seed.integrations.cron_sched import cron_config_canonical_path, reload_cron_scheduler
+        from seed.integrations.cron_sched import (
+            cron_config_canonical_path,
+            reload_cron_scheduler,
+        )
 
         path = cron_config_canonical_path()
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
-        reload_cron_scheduler()
+        reload_result = reload_cron_scheduler()
         jobs = data.get("jobs")
         n = len(jobs) if isinstance(jobs, list) else 0
         return (
-            f"seed_cron_apply: wrote {path} ({len(content)} chars); scheduler reloaded. "
-            f"enabled={data.get('enabled')!r}; jobs={n}."
+            f"seed_cron_apply: wrote {path} ({len(content)} chars); "
+            f"reload={reload_result}; enabled={data.get('enabled')!r}; jobs={n}."
         )
     except Exception as e:
         logger.exception("seed_cron_apply")
@@ -65,7 +68,6 @@ codeagent_cron_apply_def = replace(
 
 
 # ── Cron path / reload tools ──────────────────────────────────────────
-from seed.core.models import Tool
 
 
 def seed_cron_path_handler() -> str:
@@ -100,13 +102,16 @@ codeagent_cron_path_def = replace(
 
 def seed_cron_reload_handler() -> str:
     try:
-        from seed.integrations.cron_sched import cron_status_for_ui, reload_cron_scheduler
+        from seed.integrations.cron_sched import (
+            cron_status_for_ui,
+            reload_cron_scheduler,
+        )
 
-        reload_cron_scheduler()
+        reload_result = reload_cron_scheduler()
         st = cron_status_for_ui()
         jobs = st.get("scheduled_jobs") or []
         lines = [
-            "seed_cron_reload: ok",
+            f"seed_cron_reload: {reload_result}",
             f"scheduler_running={st.get('scheduler_running')}",
             f"config_enabled={st.get('config_enabled')}",
             f"env_disabled={st.get('env_disabled')}",
