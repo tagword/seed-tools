@@ -7,17 +7,29 @@ import re
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 from typing import List, Optional
 
 from seed_tools._builtin_checks import _builtin_checks
 
 
 def _get_ruff_argv() -> Optional[List[str]]:
-    """Resolve ruff CLI: `ruff` on PATH or ``python -m ruff``."""
+    """Resolve ruff CLI: `ruff` on PATH, PyInstaller bundle, or ``python -m ruff``."""
     import shutil
 
     if shutil.which("ruff"):
         return ["ruff"]
+
+    # PyInstaller 打包环境：ruff.exe 由 spec 打进 bundle 的 tools/bin
+    # （Windows 修复：prepare_bundle_tools.py 是 macOS-only，Windows 走 spec stage）
+    if getattr(sys, "frozen", False):
+        _meipass = getattr(sys, "_MEIPASS", "")
+        _base = Path(_meipass) if _meipass else Path(sys.executable).parent
+        for _root in (_base, _base / "_internal"):
+            _cand = _root / "tools" / "bin" / ("ruff.exe" if os.name == "nt" else "ruff")
+            if _cand.is_file():
+                return [str(_cand)]
+
     try:
         r = subprocess.run(
             [sys.executable, "-m", "ruff", "--version"],

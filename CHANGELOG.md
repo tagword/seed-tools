@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5 (2026-08-06)
+
+- fix(code_check): PyInstaller 打包环境下从 bundle 内 `tools/bin` 探测 ruff 二进制（修复 Windows exe 中 code_check 提示 ruff 缺失）；补齐缺失的 `Path` import
+
 ## 1.0.4 (2026-08-06)
 
 - feat(vision): `_call_vision_llm` 返回 `(text, usage)` — vision_analyze 结果附带 usage 统计（token 用量），media.py 视频分析同步兼容
