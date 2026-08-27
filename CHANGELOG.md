@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6 (2026-08-27)
+
+- fix(cron): apply/reload handler 返回真实 reload 结果（此前吞掉失败，UI 误判成功）+ 去掉重复 Tool import
+
 ## 1.0.5 (2026-08-06)
 
 - fix(code_check): PyInstaller 打包环境下从 bundle 内 `tools/bin` 探测 ruff 二进制（修复 Windows exe 中 code_check 提示 ruff 缺失）；补齐缺失的 `Path` import
